@@ -21,26 +21,48 @@ class VideoDownloader:
     def get_video_info(self, url):
         try:
             platform = self.get_platform(url)
+            
+            # আপডেটেড yt-dlp অপশন
             ydl_opts = {
                 'quiet': True,
                 'no_warnings': True,
-                'extract_flat': True,
+                'extract_flat': False,  # Flat থেকে False করে দিন
                 'ignoreerrors': True,
+                'cookiefile': None,
+                'nocheckcertificate': True,
+                'http_headers': {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
             }
+            
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
+                
                 if info is None:
-                    return None
+                    return {
+                        'success': False,
+                        'error': 'Video not found or inaccessible'
+                    }
+                
+                # ভিডিও URL বের করুন
                 video_url = None
-                if 'url' in info:
+                if 'url' in info and info['url']:
                     video_url = info['url']
                 elif 'formats' in info and info['formats']:
+                    # সেরা কোয়ালিটি খুঁজুন
                     for f in info['formats']:
                         if f.get('height') and f.get('height') >= 720:
                             video_url = f['url']
                             break
-                    if not video_url:
-                        video_url = info['formats'][-1]['url']
+                    if not video_url and info['formats']:
+                        video_url = info['formats'][-1].get('url')
+                
+                if not video_url:
+                    return {
+                        'success': False,
+                        'error': 'No video URL found'
+                    }
+                
                 return {
                     'success': True,
                     'title': info.get('title', 'Untitled'),
@@ -48,6 +70,12 @@ class VideoDownloader:
                     'thumbnail': info.get('thumbnail', ''),
                     'platform': platform,
                     'duration': info.get('duration', 0),
+                    'type': 'video'
                 }
+                
         except Exception as e:
-            return {'success': False, 'error': str(e)}
+            print(f"❌ Error in get_video_info: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
