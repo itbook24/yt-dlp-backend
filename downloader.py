@@ -22,17 +22,27 @@ class VideoDownloader:
         try:
             platform = self.get_platform(url)
             
-            # আপডেটেড yt-dlp অপশন
+            # yt-dlp 2025.06.09-এর জন্য আপডেটেড অপশন
             ydl_opts = {
                 'quiet': True,
                 'no_warnings': True,
-                'extract_flat': False,  # Flat থেকে False করে দিন
+                'extract_flat': False,
                 'ignoreerrors': True,
                 'cookiefile': None,
                 'nocheckcertificate': True,
                 'http_headers': {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                },
+                # ইউটিউবের জন্য বিশেষ 설정
+                'extractor_args': {
+                    'youtube': {
+                        'skip': ['hls', 'dash'],
+                        'player_client': ['android', 'web'],
+                    }
+                },
+                # ইউটিউব শর্টস-এর জন্য অতিরিক্ত
+                'format': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]',
+                'merge_output_format': 'mp4',
             }
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
