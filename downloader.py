@@ -1,5 +1,6 @@
 import yt_dlp
 import os
+import re
 
 class VideoDownloader:
     def __init__(self):
@@ -22,7 +23,7 @@ class VideoDownloader:
         try:
             platform = self.get_platform(url)
             
-            # yt-dlp 2025.06.09-এর জন্য আপডেটেড অপশন
+            # yt-dlp অপশন (সর্বশেষ ভার্সনের জন্য)
             ydl_opts = {
                 'quiet': True,
                 'no_warnings': True,
@@ -33,14 +34,14 @@ class VideoDownloader:
                 'http_headers': {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
                 },
-                # ইউটিউবের জন্য বিশেষ 설정
+                # ইউটিউবের জন্য বিশেষ এক্সট্র্যাক্টর
                 'extractor_args': {
                     'youtube': {
                         'skip': ['hls', 'dash'],
                         'player_client': ['android', 'web'],
                     }
                 },
-                # ইউটিউব শর্টস-এর জন্য অতিরিক্ত
+                # সেরা কোয়ালিটি
                 'format': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]',
                 'merge_output_format': 'mp4',
             }
@@ -48,6 +49,7 @@ class VideoDownloader:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
                 
+                # যদি info None হয়
                 if info is None:
                     return {
                         'success': False,
@@ -56,23 +58,29 @@ class VideoDownloader:
                 
                 # ভিডিও URL বের করুন
                 video_url = None
+                
+                # সরাসরি URL থাকলে
                 if 'url' in info and info['url']:
                     video_url = info['url']
+                # ফরম্যাট থেকে বের করুন
                 elif 'formats' in info and info['formats']:
-                    # সেরা কোয়ালিটি খুঁজুন
+                    # প্রথমে 720p বা তার বেশি খুঁজুন
                     for f in info['formats']:
                         if f.get('height') and f.get('height') >= 720:
-                            video_url = f['url']
+                            video_url = f.get('url')
                             break
+                    # না পেলে সেরা ফরম্যাট নিন
                     if not video_url and info['formats']:
                         video_url = info['formats'][-1].get('url')
                 
+                # এখনও URL না পেলে Error
                 if not video_url:
                     return {
                         'success': False,
                         'error': 'No video URL found'
                     }
                 
+                # সাফল্য
                 return {
                     'success': True,
                     'title': info.get('title', 'Untitled'),
